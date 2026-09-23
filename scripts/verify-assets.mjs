@@ -9,7 +9,7 @@
  * at runtime, which is why this list is short and why it stays short.
  */
 import { createHash } from 'node:crypto';
-import { readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -34,11 +34,11 @@ const EXPECTED = [
   // The sounds: the Spider-Man music track, the web swing, the jump, the
   // player's death and an enemy's defeat. (Background.mp3 and shop.png are
   // supplied but not shipped: the build prunes them.)
-  { path: 'assets/audio/Spider man background music.mp3', md5: '9891388fc7dd950c43a173838ceb5ff9' },
+  { path: 'assets/audio/spider-man-theme.mp3', md5: '9891388fc7dd950c43a173838ceb5ff9' },
   { path: 'assets/audio/swing.mp3', md5: 'e6688e0dff9e88fb875a3e558cb5b028' },
   { path: 'assets/audio/death.mp3', md5: 'a6c361490b027a8effd0ac861936a5a7' },
   { path: 'assets/audio/jump.mp3', md5: '77c58db6921be7b0c7a61903d38bbf30' },
-  { path: 'assets/audio/enemy death.mp3', md5: '180a30391ff7a7cb12e4f05f0f482539' },
+  { path: 'assets/audio/enemy-death.mp3', md5: '180a30391ff7a7cb12e4f05f0f482539' },
 ];
 
 let failures = 0;
@@ -62,6 +62,23 @@ for (const asset of EXPECTED) {
     console.log(`  ok    ${asset.path} (${size} bytes)`);
   }
 }
+
+// Every file under assets/ ships as a URL. Bloxity Hosting answers 400 Bad
+// Request to a path with a space in it (Vite's dev server does not), so a name
+// that works locally can be silent in DEV and PROD: letters, digits, '.', '_'
+// and '-' only.
+const walk = (dir, rel = '') => {
+  for (const entry of readdirSync(new URL(`${dir}/`, `file://${root.replace(/\\/g, '/')}`), { withFileTypes: true })) {
+    const path = `${rel}${entry.name}`;
+    if (entry.isDirectory()) walk(`${dir}/${entry.name}`, `${path}/`);
+    else if (!/^[A-Za-z0-9._-]+$/.test(entry.name)) {
+      console.error(`  FAIL  assets/${path}: not a URL-safe name (Bloxity Hosting rejects spaces with 400)`);
+      failures += 1;
+    }
+  }
+};
+walk('assets');
+if (failures === 0) console.log('  ok    every asset name is URL-safe (no spaces)');
 
 if (failures > 0) {
   console.error(`\n${failures} asset problem(s). The supplied files must never be modified.`);

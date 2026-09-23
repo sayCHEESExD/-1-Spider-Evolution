@@ -41,7 +41,7 @@ const WALK_GAIN = 0.9;
  */
 
 /** The supplied Spider-Man background track (spaces percent-encoded). Streamed, never decoded. */
-const MUSIC_URL = '/audio/Spider%20man%20background%20music.mp3';
+const MUSIC_URL = '/audio/spider-man-theme.mp3';
 
 /**
  * The supplied one-shots, by the sound they stand in for. A name with a space
@@ -55,8 +55,8 @@ const SAMPLE_URLS: Partial<Record<SoundName, string>> = {
   jump: '/audio/jump.mp3',
   // The supplied swing: a web catching and the whoosh of the arc.
   swing: '/audio/swing.mp3',
-  // The supplied enemy death (a space in the supplied name, percent-encoded).
-  enemyDeath: '/audio/enemy%20death.mp3',
+  // No spaces in any shipped file name: Bloxity Hosting answers 400 to a path with one.
+  enemyDeath: '/audio/enemy-death.mp3',
 };
 
 /** Sampled sounds that may overlap themselves: two enemies falling together are two deaths. */

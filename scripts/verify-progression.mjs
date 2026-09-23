@@ -311,7 +311,7 @@ console.log('\nEnemies fight back, through defense');
   const def = S.stageByIndex(1).enemies[0];
   place(p, def.x, def.z + 1.5);
   for (let i = 0; i < 60; i += 1) combat.tick(0.05, [p]);
-  check(p.health < 100, `a Street Thug's blows land (health ${Math.round(p.health)})`);
+  check(p.health < 100, `a Goblin Gang Punk's blows land (health ${Math.round(p.health)})`);
   const q = fresh('floating');
   combat.resetRun(q);
   place(q, def.x, def.z + 1.5, 12, false);

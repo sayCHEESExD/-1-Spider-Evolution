@@ -454,6 +454,143 @@ const clonePaint: SuitPainter = (p) => {
   return p.ny > 0.5 ? 0x1f3fb0 : 0xb81a24;
 };
 
+// ------------------------------------------- the early waves: paint jobs
+//
+// Even Stage 1 is the Spider-Man universe: every henchman wears who they
+// work for. Street level first (cheap masks, suits, hoodies), then armour and
+// powers as the stages climb.
+
+/** Goblin Gang punk: a purple hoodie and a cheap rubber Goblin mask - green, yellow eyes, a painted grin. */
+const goblinPunkPaint: SuitPainter = (p) => {
+  const green = 0x5ac84a;
+  const purple = 0x5a2a8a;
+  if (p.part === 'head') {
+    if (isFront(p) && within(p.u, 0.12, 0.88) && within(p.v, 0.08, 0.84)) {
+      if (ellipse(p.u, p.v, 0.3, 0.6, 0.12, 0.06) || ellipse(p.u, p.v, 0.7, 0.6, 0.12, 0.06)) return 0xffe23a;
+      if (within(p.v, 0.22, 0.32) && within(p.u, 0.22, 0.78)) return frac(p.u * 9) < 0.22 ? 0x1a3a1a : 0xf4f0d8;
+      if (within(p.v, 0.7, 0.76) && (within(p.u, 0.2, 0.42) || within(p.u, 0.58, 0.8))) return 0x2a6a2a;
+      return green;
+    }
+    return purple;
+  }
+  if (p.part === 'torso') {
+    if (isFront(p) && Math.abs(p.u - 0.5) < 0.02 && p.v > 0.35) return 0xc8c8d0;
+    if (isFront(p) && within(p.v, 0.12, 0.34) && within(p.u, 0.22, 0.78)) return 0x4a2078;
+    if ((isFront(p) || p.face === 'back') && ellipse(p.u, p.v, 0.5, 0.62, 0.12, 0.1) && p.face === 'back') return green;
+    return p.v < 0.1 ? 0x3a1a5a : purple;
+  }
+  if (isArm(p)) return p.ny < 0.1 ? green : purple;
+  if (isLeg(p)) return p.ny < 0.08 ? 0x1a1a22 : 0x2a3a5a;
+  return purple;
+};
+
+/** Inner Demon (Mister Negative's gang): a black suit and the white demon mask. */
+const innerDemonPaint: SuitPainter = (p) => {
+  if (p.part === 'head') {
+    if (isFront(p) && within(p.u, 0.1, 0.9) && within(p.v, 0.08, 0.86)) {
+      // Angled black eye slits, a scowl of black fangs, red cheek marks.
+      for (const side of [-1, 1]) {
+        const du = p.u - (0.5 + side * 0.2);
+        const dv = p.v - 0.6 + side * du * 0.6;
+        if (Math.abs(dv) < 0.05 && Math.abs(du) < 0.12) return 0x050508;
+        if (ellipse(p.u, p.v, 0.5 + side * 0.3, 0.42, 0.05, 0.08)) return 0xc81424;
+      }
+      if (within(p.v, 0.18, 0.3) && within(p.u, 0.28, 0.72)) return frac(p.u * 8) < 0.5 ? 0x050508 : 0xf4f4f4;
+      return 0xf4f4f4;
+    }
+    return 0x0e0e12;
+  }
+  if (p.part === 'torso') {
+    if (isFront(p) && Math.abs(p.u - 0.5) < 0.06 && p.v > 0.45) return 0xf4f4f4;
+    if (isFront(p) && Math.abs(Math.abs(p.u - 0.5) - 0.14) < 0.03 && p.v > 0.4) return 0x2a2a34;
+    return 0x101014;
+  }
+  if (isArm(p)) return p.ny < 0.1 ? 0xf4f4f4 : 0x101014;
+  return 0x101014;
+};
+
+/** Maggia mobster (Hammerhead's crew): a pinstripe suit, a red tie. */
+const mobsterPaint: SuitPainter = (p) => {
+  if (p.part === 'head') return p.face === 'top' || (!isFront(p) && p.v > 0.6) ? 0x2a1a0a : 0xe8c0a0;
+  if (p.part === 'torso') {
+    if (isFront(p) && Math.abs(p.u - 0.5) < 0.04 && p.v > 0.3) return 0xb01418;
+    if (isFront(p) && Math.abs(p.u - 0.5) < 0.12 && p.v > 0.45) return 0xf4f4f0;
+  }
+  if (p.part === 'torso' || isArm(p) || isLeg(p)) {
+    if (isArm(p) && p.ny < 0.08) return 0xe8c0a0;
+    if (isLeg(p) && p.ny < 0.08) return 0x0e0e12;
+    return frac((p.part === 'torso' ? p.u : p.u + p.ny) * 14) < 0.1 ? 0x8a8a94 : 0x26262e;
+  }
+  return 0x26262e;
+};
+
+/** Lizard spawn: green scales, a pale belly, yellow slit eyes. */
+const lizardSpawnPaint: SuitPainter = (p) => {
+  const scale = frac(p.u * 10 + (Math.floor(p.v * 10) % 2) * 0.5) < 0.5 ? 0x5aa83a : 0x46902e;
+  if (p.part === 'head' && isFront(p)) {
+    for (const side of [-1, 1]) {
+      if (ellipse(p.u, p.v, 0.5 + side * 0.22, 0.62, 0.1, 0.07)) return Math.abs(p.u - (0.5 + side * 0.22)) < 0.02 ? 0x0a0a0a : 0xffd23a;
+    }
+    if (within(p.v, 0.2, 0.26) && within(p.u, 0.2, 0.8)) return 0x2a4a1a;
+  }
+  if (p.part === 'torso' && isFront(p) && Math.abs(p.u - 0.5) < 0.22) return frac(p.v * 8) < 0.15 ? 0xc8c8a0 : 0xe0e0b8;
+  return scale;
+};
+
+/** Electro's spark goons: a green bodysuit struck with yellow bolts, a lightning-star mask. */
+const sparkPaint: SuitPainter = (p) => {
+  const green = 0x2a9a3a;
+  const yellow = 0xffe23a;
+  if (p.part === 'head') {
+    if (isFront(p)) {
+      const du = Math.abs(p.u - 0.5);
+      const star = within(p.v, 0.35, 0.8) && du < 0.4 - Math.abs(p.v - 0.58) * 1.1;
+      if (star) return ellipse(p.u, p.v, 0.36, 0.6, 0.06, 0.04) || ellipse(p.u, p.v, 0.64, 0.6, 0.06, 0.04) ? 0x0a2a0a : yellow;
+    }
+    return green;
+  }
+  const zig = Math.abs(frac(p.v * 5) - 0.5) * 0.3;
+  if ((p.part === 'torso' && (isFront(p) || p.face === 'back') && Math.abs(p.u - 0.3 - zig) < 0.05) || ((isArm(p) || isLeg(p)) && frac(p.ny * 5) < 0.12)) return yellow;
+  return green;
+};
+
+/** Rhino's guards: grey armour plates with rivets, a horned helmet. */
+const rhinoGuardPaint: SuitPainter = (p) => {
+  if (p.part === 'head') return isFront(p) && within(p.v, 0.2, 0.55) && within(p.u, 0.28, 0.72) ? 0xd8b890 : 0x6a7484;
+  const seam = frac(p.u * 3) < 0.06 || frac(p.v * 4) < 0.06;
+  const rivet = ellipse(frac(p.u * 3), frac(p.v * 4), 0.2, 0.2, 0.06, 0.06);
+  return rivet ? 0xc8ccd4 : seam ? 0x3a4454 : 0x6a7484;
+};
+
+/** Kraven's hunters: leopard-print vests over bare arms, khaki trousers. */
+const hunterPaint: SuitPainter = (p) => {
+  if (p.part === 'head') return p.face === 'top' || (!isFront(p) && p.v > 0.55) ? 0x3a2a14 : 0xd8a07a;
+  if (p.part === 'torso') {
+    if (isFront(p) && Math.abs(p.u - 0.5) < 0.12 && p.v > 0.5) return 0xd8a07a;
+    const cu = frac(p.u * 6 + (Math.floor(p.v * 6) % 2) * 0.5);
+    const cv = frac(p.v * 6);
+    if (ellipse(cu, cv, 0.5, 0.5, 0.2, 0.18)) return ellipse(cu, cv, 0.5, 0.5, 0.1, 0.09) ? 0xa87a2a : 0x2a1a0a;
+    return 0xd8a848;
+  }
+  if (isArm(p)) return 0xd8a07a;
+  if (isLeg(p)) return p.ny < 0.1 ? 0x2a1a0a : 0x8a7a4a;
+  return 0xd8a848;
+};
+
+const tommyGun = (b: PartBuilder): void => {
+  gun(b, 0x1a1a1a, 0xffd23a);
+  b.add(new CylinderGeometry(0.2, 0.2, 0.14, 12), 0x3a2a1a, 'smooth', { y: -0.12, z: 0.25, rz: Math.PI / 2 });
+  b.add(new BoxGeometry(0.12, 0.14, 0.4), 0x5a3a1a, 'smooth', { y: 0.02, z: -0.25 });
+};
+const daoBlade = (b: PartBuilder): void => {
+  b.add(new BoxGeometry(0.06, 1.1, 0.2), 0xdfe6ee, 'smooth', { y: 0.65, rx: -0.12 });
+  b.add(new BoxGeometry(0.2, 0.06, 0.26), 0xd4af37, 'smooth', { y: 0.08 });
+  b.add(new BoxGeometry(0.1, 0.34, 0.12), 0x2a0a0a, 'smooth', { y: -0.1 });
+};
+const goblinEars = (b: PartBuilder, s: number, color: number): void => {
+  for (const side of [-1, 1]) b.add(new ConeGeometry(s * 0.09, s * 0.36, 4), color, 'smooth', { x: side * s * 0.56, y: s * 0.22, rz: side * -1.2 });
+};
+
 const look = (palette: LookPalette, head?: Maker, hand?: (b: PartBuilder) => void, back?: (b: PartBuilder) => void, paint?: SuitPainter): EnemyLookDef => ({
   palette,
   paint,
@@ -465,11 +602,22 @@ const look = (palette: LookPalette, head?: Maker, hand?: (b: PartBuilder) => voi
 // --------------------------------------------------------------------- looks
 
 export const ENEMY_LOOKS: Readonly<Record<EnemyLook, EnemyLookDef>> = {
-  thug: look({ cloth: 0x3a4a6a, trim: 0x1a2232, skin: 0xe0b890 }, (b, s) => beanie(b, s, 0x2a2a2a), (b) => bat(b)),
-  knifethug: look({ cloth: 0x6a2a2a, trim: 0x2a0a0a, skin: 0xd8a47a }, (b, s) => bandana(b, s, 0xc8202a), (b) => knife(b)),
-  enforcer: look({ cloth: 0x2a2a34, trim: 0x0e0e14, skin: 0xe8c0a0 }, (b, s) => cap(b, s, 0x1a1a22), (b) => gun(b)),
+  // Stage 1-2: the Goblin Gang - purple hoodies, cheap rubber Goblin masks, taped bats.
+  thug: look({ cloth: 0x5a2a8a, trim: 0x3a1a5a, skin: 0x5ac84a }, (b, s) => {
+    b.add(new SphereGeometry(s * 0.6, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), 0x5a2a8a, 'smooth', { y: s * 0.12, z: -s * 0.06 });
+    goblinEars(b, s, 0x5ac84a);
+  }, (b) => {
+    bat(b, 0x6b4a2a, 1.4);
+    b.add(new CylinderGeometry(0.17, 0.17, 0.3, 8), 0x3a8a2a, 'smooth', { y: 0.05 });
+  }, undefined, goblinPunkPaint),
+  // Stage 2: Mister Negative's Inner Demons - black suits, white demon masks, dao blades.
+  knifethug: look({ cloth: 0x101014, trim: 0x0a0a0e, skin: 0xf4f4f4 }, (b, s) => {
+    for (const side of [-1, 1]) b.add(new ConeGeometry(s * 0.08, s * 0.3, 5), 0xf4f4f4, 'smooth', { x: side * s * 0.3, y: s * 0.56, rz: side * -0.35 });
+  }, (b) => daoBlade(b), undefined, innerDemonPaint),
+  // Stage 3: Hammerhead's Maggia - pinstripes, fedoras, drum-fed guns.
+  enforcer: look({ cloth: 0x26262e, trim: 0x0e0e14, skin: 0xe8c0a0 }, (b, s) => fedora(b, s, 0x1a1a22), (b) => tommyGun(b), undefined, mobsterPaint),
   hammerhead: look({ cloth: 0x3a3a44, trim: 0x1a1a22, skin: 0xd8b890 }, (b, s) => b.add(new BoxGeometry(s * 1.2, s * 0.3, s * 1.1), 0x8a8a94, 'smooth', { y: s * 0.52 }), (b) => gun(b, 0x1a1a1a), undefined, hammerheadPaint),
-  lizardling: look({ cloth: 0x4f8a3a, trim: 0x2f5a1c, skin: 0x7fc85a }, (b, s) => eyes(b, s, 0xffd23a), (b) => claws(b), (b) => tail(b, 0x4f8a3a)),
+  lizardling: look({ cloth: 0x4f8a3a, trim: 0x2f5a1c, skin: 0x7fc85a }, (b, s) => b.add(new BoxGeometry(s * 0.46, s * 0.26, s * 0.5), 0x5aa83a, 'smooth', { y: -s * 0.14, z: s * 0.46 }), (b) => claws(b), (b) => tail(b, 0x4f8a3a), lizardSpawnPaint),
   lizard: look({ cloth: 0xf4f4f0, trim: 0x3a4a6a, skin: 0x4f9a3a }, (b, s) => {
     b.add(new BoxGeometry(s * 0.5, s * 0.3, s * 0.6), 0x4f9a3a, 'smooth', { y: -s * 0.1, z: s * 0.5 });
     eyes(b, s, 0xffd23a, true, 0.22, 0.18);
@@ -479,17 +627,22 @@ export const ENEMY_LOOKS: Readonly<Record<EnemyLook, EnemyLookDef>> = {
     b.add(new BoxGeometry(s * 1.12, s * 0.24, s * 1.1), 0x5a2a8a, 'smooth', { y: s * 0.52 });
     for (const side of [-1, 1]) b.add(new ConeGeometry(s * 0.12, s * 0.5, 4), 0x4fb84a, 'smooth', { x: side * s * 0.62, y: s * 0.28, rz: side * -1.1 });
   }, (b) => b.add(new SphereGeometry(0.3, 10, 8), 0xff8a1c, 'glow', { y: 0.15 }), (b) => wings(b, 0x3a5a3a, 1.2), goblinPaint),
-  sparkgoon: look({ cloth: 0x2a8a3a, trim: 0x14501c, skin: 0xe0b890 }, (b, s) => helmet(b, s, 0x2a2a34, 0xffe23a, true), (b) => b.add(new CylinderGeometry(0.1, 0.1, 1.4, 6), 0xffe23a, 'glow', { y: 0.5 })),
+  sparkgoon: look({ cloth: 0x2a9a3a, trim: 0x14501c, skin: 0xffe23a }, (b, s) => lightning(b, s * 0.7, 0xffe23a), (b) => b.add(new CylinderGeometry(0.1, 0.1, 1.4, 6), 0xffe23a, 'glow', { y: 0.5 }), undefined, sparkPaint),
   electro: look({ cloth: 0x2ab84a, trim: 0x146a2a, skin: 0xffe23a }, (b, s) => lightning(b, s, 0xffe23a), (b) => orbHand(b, 0x9affff), undefined, electroPaint),
   rhinoguard: look({ cloth: 0x6a7484, trim: 0x3a4454, skin: 0xd8b890 }, (b, s) => {
     helmet(b, s, 0x6a7484);
     b.add(new ConeGeometry(s * 0.1, s * 0.4, 6), 0xe8e2d0, 'smooth', { y: s * 0.3, z: s * 0.55, rx: 1.0 });
-  }, (b) => pipe(b)),
+  }, (b) => pipe(b), undefined, rhinoGuardPaint),
   rhino: look({ cloth: 0x7a8494, trim: 0x5a6474, skin: 0xe0b890 }, (b, s) => {
     b.add(new SphereGeometry(s * 0.66, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.62), 0x7a8494, 'smooth', { y: s * 0.02 });
     b.add(new ConeGeometry(s * 0.2, s * 0.8, 8), 0xe8e2d0, 'smooth', { y: s * 0.42, z: s * 0.5, rx: 0.9 });
   }, undefined, undefined, rhinoPaint),
-  hunter: look({ cloth: 0x5a4a2a, trim: 0x2a1a0a, skin: 0xd8a07a }, (b, s) => cap(b, s, 0x6a5a3a), (b) => spear(b)),
+  hunter: look({ cloth: 0xd8a848, trim: 0x2a1a0a, skin: 0xd8a07a }, (b, s) => {
+    for (let i = 0; i < 6; i += 1) {
+      const a = (i / 6) * Math.PI * 2;
+      b.add(new ConeGeometry(s * 0.1, s * 0.3, 4), 0xc8862a, 'smooth', { x: Math.cos(a) * s * 0.5, y: -s * 0.38, z: Math.sin(a) * s * 0.5 - s * 0.05, rx: Math.PI });
+    }
+  }, (b) => spear(b), undefined, hunterPaint),
   kraven: look({ cloth: 0xc89a4a, trim: 0x6a4a1a, skin: 0xd8a07a }, (b, s) => {
     for (let i = 0; i < 8; i += 1) {
       const a = (i / 8) * Math.PI * 2;

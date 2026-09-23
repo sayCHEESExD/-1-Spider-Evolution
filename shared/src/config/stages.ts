@@ -187,14 +187,14 @@ const Qi = 1e18;
 const Sx = 1e21;
 
 const PLANS: readonly StagePlan[] = [
-  { name: 'Queens Alley', theme: 'alley', power: 60, reward: 1, wave: [['Street Thug', 'thug', 3]] },
-  { name: 'Chinatown Market', theme: 'chinatown', power: 300, reward: 3, wave: [['Street Thug', 'thug', 2], ['Knife Thug', 'knifethug', 2]] },
-  { name: "Hell's Kitchen Docks", theme: 'docks', power: 1.5 * K, reward: 10, wave: [['Maggia Enforcer', 'enforcer', 4]], boss: ['Hammerhead', 'hammerhead', 2.3] },
-  { name: 'Subway Tunnels', theme: 'subway', power: 8 * K, reward: 25, wave: [['Sewer Lizard', 'lizardling', 5]], boss: ['The Lizard', 'lizard', 2.6] },
+  { name: 'Queens Alley', theme: 'alley', power: 60, reward: 1, wave: [['Goblin Gang Punk', 'thug', 3]] },
+  { name: 'Chinatown Market', theme: 'chinatown', power: 300, reward: 3, wave: [['Goblin Gang Punk', 'thug', 2], ['Inner Demon', 'knifethug', 2]] },
+  { name: "Hell's Kitchen Docks", theme: 'docks', power: 1.5 * K, reward: 10, wave: [['Maggia Mobster', 'enforcer', 4]], boss: ['Hammerhead', 'hammerhead', 2.3] },
+  { name: 'Subway Tunnels', theme: 'subway', power: 8 * K, reward: 25, wave: [['Lizard Spawn', 'lizardling', 5]], boss: ['The Lizard', 'lizard', 2.6] },
   { name: 'Oscorp Labs', theme: 'oscorp', power: 40 * K, reward: 100, wave: [['Goblin Trooper', 'goblintrooper', 5]], boss: ['Green Goblin', 'greengoblin', 2.4] },
-  { name: 'Times Square', theme: 'timessquare', power: 200 * K, reward: 800, wave: [['Spark Goon', 'sparkgoon', 6]], boss: ['Electro', 'electro', 2.4] },
+  { name: 'Times Square', theme: 'timessquare', power: 200 * K, reward: 800, wave: [["Electro's Spark Goon", 'sparkgoon', 6]], boss: ['Electro', 'electro', 2.4] },
   { name: 'Brooklyn Bridge', theme: 'bridge', power: 1 * M, reward: 3 * K, wave: [['Rhino Guard', 'rhinoguard', 6]], boss: ['Rhino', 'rhino', 2.9] },
-  { name: 'Central Park', theme: 'park', power: 5 * M, reward: 12 * K, wave: [['Kraven Hunter', 'hunter', 6]], boss: ['Kraven', 'kraven', 2.4] },
+  { name: 'Central Park', theme: 'park', power: 5 * M, reward: 12 * K, wave: [["Kraven's Hunter", 'hunter', 6]], boss: ['Kraven', 'kraven', 2.4] },
   { name: 'Midtown Rooftops', theme: 'rooftops', power: 25 * M, reward: 50 * K, wave: [['Vulture Drone', 'vulturedrone', 7]], boss: ['Vulture', 'vulture', 2.4] },
   { name: 'Coney Island', theme: 'coney', power: 125 * M, reward: 200 * K, wave: [['Illusion Clone', 'illusion', 7]], boss: ['Mysterio', 'mysterio', 2.5] },
   { name: 'Sandstorm Harbor', theme: 'harbor', power: 600 * M, reward: 900 * K, wave: [['Sand Brute', 'sandbrute', 7]], boss: ['Sandman', 'sandman', 3] },

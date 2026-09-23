@@ -45,6 +45,10 @@ layout facts.
 
 Any other branch does not deploy. A manual run (Actions, "Run workflow") follows the same mapping.
 
+The run is ordered `verify` -> `server` -> `frontend`: nothing publishes unless the typecheck, the verification
+suites, the client build and the 12 MB budget pass, and the frontend is uploaded only after its backend rolled,
+so the two halves of a push always ship together.
+
 - **Backend:** the Colyseus server is built from the root `Dockerfile` and pushed to
   `ghcr.io/<owner>/spider-evolution-server:<channel>-<sha>`. It is rolled with
   `POST https://legion.bloxity.io/v1/apps/spider-evolution/deploy`, using the commit SHA as the version,

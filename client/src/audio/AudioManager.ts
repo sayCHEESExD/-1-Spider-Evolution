@@ -40,13 +40,34 @@ const WALK_GAIN = 0.9;
  * Check `npm run size:client` after changing any of the three.
  */
 
-/** The supplied Spider-Man background track (spaces percent-encoded). Streamed, never decoded. */
+/** The supplied Spider-Man background track. Streamed, never decoded. */
 const MUSIC_URL = '/audio/spider-man-theme.mp3';
 
 /**
- * The supplied one-shots, by the sound they stand in for. A name with a space
- * is percent-encoded once here: the supplied files are never renamed. The web
- * shot (thwip), footfalls and the jingles are synthesised.
+ * WHERE THE MUSIC LOOPS: the steady body of the track, never its ending.
+ *
+ * The supplied file (99.3 s) ends in a mastered FADE-OUT: it holds about
+ * -14 dBFS to 93.5 s, then falls ~3 dB every quarter second to silence at the
+ * end. Looping the whole file therefore faded the music away every 99 seconds
+ * and restarted it - which played as the music "gradually getting quieter and
+ * fading away" while nothing in the game touched a gain. The file itself may
+ * not be edited (verify-assets pins it), so the loop is taken BEFORE the fade:
+ * 93.3 s, with the element's `timeupdate` (at least every 250 ms) catching it
+ * by 93.55 s at the latest - still inside the steady body.
+ *
+ * Measured, not guessed: per-quarter-second RMS of the decoded file - 93.25 s
+ * -11 dB, 93.5 s -15, 93.75 s -19, 94 s -22, 94.5 s -29 ... 99 s -78.
+ * The loop comes back in at 0.16 s, not 0: the file opens with 0.16 s of
+ * digital silence (-167 to -82 dB) before its intro swells in (-47 dB at
+ * 0.18 s, -22 at 0.28), and that silence would otherwise be a gap on every loop.
+ * Re-measure these if the track is ever replaced.
+ */
+const MUSIC_LOOP_START = 0.16;
+const MUSIC_LOOP_END = 93.3;
+
+/**
+ * The supplied one-shots, by the sound they stand in for. The web shot
+ * (thwip), footfalls and the jingles are synthesised.
  */
 const SAMPLE_URLS: Partial<Record<SoundName, string>> = {
   // The supplied death.
@@ -590,7 +611,12 @@ export class AudioManager {
     if (!ctx || !bus || this.musicElement) return;
 
     const element = new Audio(MUSIC_URL);
+    // Kept as the fallback (a seek that never lands still loops), but the loop
+    // proper is taken before the file's own fade-out: see MUSIC_LOOP_END.
     element.loop = true;
+    element.addEventListener('timeupdate', () => {
+      if (element.currentTime >= MUSIC_LOOP_END) element.currentTime = MUSIC_LOOP_START;
+    });
     // Same-origin, but stated anyway: without it the element is tainted and
     // `createMediaElementSource` produces silence rather than an error.
     element.crossOrigin = 'anonymous';

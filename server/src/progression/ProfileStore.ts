@@ -1,4 +1,4 @@
-import { ALL_SHOOTER_BITS, ALL_SUIT_BITS, SHOOTER_COUNT, STARTER_SHOOTER_BITS, STARTER_SUIT_BITS, STAGE_COUNT, SUIT_COUNT, clampRarity } from '@spider/shared';
+import { ALL_SHOOTER_BITS, ALL_SUIT_BITS, SHOOTER_COUNT, STARTER_SHOOTER_BITS, STARTER_SUIT_BITS, STAGE_COUNT, SUIT_COUNT, AVATAR_SLOT, clampRarity } from '@spider/shared';
 import {
   emptyProgress,
   progressOf,
@@ -107,8 +107,9 @@ class ProfileStore {
     // Uncapped: any whole, finite count a save holds.
     player.rebirths = Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(p.rebirths)));
     player.ownedSuits = ((Math.floor(p.ownedSuits) & ALL_SUIT_BITS) | STARTER_SUIT_BITS) >>> 0;
+    // A suit that is worn must be owned; anything else is the player's own avatar.
     const slot = Math.floor(p.suitSlot);
-    player.suitSlot = slot >= 1 && slot <= SUIT_COUNT && ((player.ownedSuits >>> (slot - 1)) & 1) === 1 ? slot : 1;
+    player.suitSlot = slot >= 1 && slot <= SUIT_COUNT && ((player.ownedSuits >>> (slot - 1)) & 1) === 1 ? slot : AVATAR_SLOT;
     player.ownedShooters = (Math.floor(p.ownedShooters) & ALL_SHOOTER_BITS) | STARTER_SHOOTER_BITS;
     const shooter = Math.floor(p.shooterId);
     player.shooterId = shooter >= 1 && shooter <= SHOOTER_COUNT && ((player.ownedShooters >> (shooter - 1)) & 1) === 1 ? shooter : 1;

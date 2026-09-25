@@ -594,6 +594,11 @@ export class GameRoom extends Room<GameState> {
       return;
     }
     this.persist(client.sessionId, player);
+    if (result.action === 'avatar') {
+      this.notify(client, { kind: 'equipped', text: 'Back in your own avatar' });
+      logger.info(SCOPE, `${client.sessionId} wears their avatar`);
+      return;
+    }
     const text =
       result.action === 'bought'
         ? `Unlocked ${result.tier.name}! +${formatAmount(result.tier.perClick)} per click`

@@ -159,8 +159,9 @@ export const emptyProgress = (): ProgressFields => ({
   wins: 0,
   lifetimeWins: 0,
   rebirths: 0,
-  ownedSuits: 1,
-  suitSlot: 1,
+  // A new player owns no suit and wears their own Bloxity avatar (slot 0).
+  ownedSuits: 0,
+  suitSlot: 0,
   ownedShooters: 1,
   shooterId: 1,
   pets: [],
@@ -180,8 +181,6 @@ export const emptyProgress = (): ProgressFields => ({
 export const progressOf = (source: Partial<ProgressFields>): ProgressFields => {
   const out = emptyProgress();
   for (const key of NUMERIC_KEYS) out[key] = numeric(source[key]);
-  if (out.ownedSuits === 0) out.ownedSuits = 1;
-  if (out.suitSlot === 0) out.suitSlot = 1;
   if (out.ownedShooters === 0) out.ownedShooters = 1;
   if (out.shooterId === 0) out.shooterId = 1;
   if (out.nextPetUid === 0) out.nextPetUid = 1;

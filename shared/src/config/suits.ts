@@ -53,15 +53,31 @@ export const SUIT_COUNT = SUITS.length;
 /** Every suit bit, for sanitising a stored mask. Slot 1 is bit 0. */
 export const ALL_SUIT_BITS = (2 ** SUIT_COUNT - 1) >>> 0;
 
-/** The Classic Suit is always owned. */
-export const STARTER_SUIT_BITS = 1;
+/**
+ * SLOT 0 IS THE PLAYER'S OWN BLOXITY AVATAR - no suit at all.
+ *
+ * Every player joins as themselves and becomes Spider-Man by claiming the
+ * Classic Suit (slot 1, still 0 Trophies, still +1) on its pad. The avatar is
+ * always owned and can be worn again from the Backpack at any time; a rebirth
+ * puts the player back in it.
+ */
+export const AVATAR_SLOT = 0;
+
+/** No suit is owned from the start: the Classic Suit is the first unlock. Old saves keep the bit they hold. */
+export const STARTER_SUIT_BITS = 0;
 
 export const suitBySlot = (slot: number): SuitTier | undefined => SUITS[Math.floor(slot) - 1];
+
+export const isAvatarSlot = (slot: number): boolean => Math.floor(slot) === AVATAR_SLOT;
 
 export const ownsSuit = (owned: number, slot: number): boolean =>
   slot >= 1 && slot <= SUIT_COUNT && (((owned | STARTER_SUIT_BITS) >>> (slot - 1)) & 1) === 1;
 
-/** Base per-click of the worn suit; an unowned or unknown slot falls back to the Classic Suit. */
+/**
+ * Base per-click of what is worn. The avatar clicks like the Classic Suit
+ * (+1), so claiming the first suit changes the LOOK, never a new player's pace;
+ * an unowned or unknown slot falls back to the same +1.
+ */
 export const suitPerClickOf = (slot: number, owned: number): number => {
   const tier = suitBySlot(slot);
   if (!tier || !ownsSuit(owned, slot)) return SUITS[0]!.perClick;

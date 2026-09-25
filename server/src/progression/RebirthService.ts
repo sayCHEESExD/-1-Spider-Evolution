@@ -1,4 +1,4 @@
-import { SPAWN, canRebirth, maxSwingsFor, rebirthHealth, rebirthMultiplier, rebirthRequiredLevel } from '@spider/shared';
+import { AVATAR_SLOT, SPAWN, STARTER_SUIT_BITS, canRebirth, maxSwingsFor, rebirthHealth, rebirthMultiplier, rebirthRequiredLevel } from '@spider/shared';
 import type { PlayerState } from '../rooms/state/PlayerState.js';
 import type { ProgressionService } from './ProgressionService.js';
 
@@ -31,8 +31,9 @@ export class RebirthService {
     player.xp = 0;
     player.webPower = 0;
     player.wins = 0;
-    player.ownedSuits = 1;
-    player.suitSlot = 1;
+    // Back to the player's own avatar; the Classic Suit is claimed again on its pad.
+    player.ownedSuits = STARTER_SUIT_BITS;
+    player.suitSlot = AVATAR_SLOT;
     progression.syncDerived(player);
     progression.heal(player);
     return {

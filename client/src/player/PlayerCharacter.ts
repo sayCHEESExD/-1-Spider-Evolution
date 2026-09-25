@@ -1,10 +1,11 @@
-import { COMBAT, PLAYER_HEIGHT } from '@spider/shared';
-import { Group, Vector3, type Object3D } from 'three';
+import { AVATAR_SLOT, COMBAT, PLAYER_HEIGHT, neckScale } from '@spider/shared';
+import { Group, Vector3, type Material, type Mesh, type Object3D } from 'three';
 import type { AnimationInput } from '../animation/AnimationInput.js';
 import { PlayerAnimator, type AnimationState } from '../animation/PlayerAnimator.js';
 import { PlayerRig } from '../animation/rig/PlayerRig.js';
 import type { AttackStyle } from '../config/animationConfig.js';
 import { PLAYER_MODEL_YAW_OFFSET } from '../config/worldVisuals.js';
+import { avatarBodies } from '../bloxity/AvatarBody.js';
 import { PetFollower } from '../pets/PetFollower.js';
 import { createSuitBody, lookKey, webHandsOf, type BodyLook } from '../suits/SuitBody.js';
 
@@ -18,7 +19,16 @@ import { createSuitBody, lookKey, webHandsOf, type BodyLook } from '../suits/Sui
  *   worldRoot     the pets, which float after the player in WORLD space
  *
  * The body is rebuilt only when the LOOK changes - a new suit, shooter or gear
- * set - and every body shares its suit's material and its gear's geometry.
+ * set, or a new avatar - and every body shares its suit's material and its
+ * gear's geometry.
+ *
+ * WITHOUT A SUIT (slot 0) a player is their own Bloxity avatar. That body comes
+ * over the network, so it is two-step: the bundled body in its own texture at
+ * once (with shooters and gear), then the Bloxity body swapped in when it
+ * lands - unless the look moved on meanwhile. A player already in their
+ * Bloxity body keeps it on screen while a changed one loads, so a new hat never
+ * flashes back to the bundled body. Claiming a suit swaps straight to the
+ * painted spider body; wearing the avatar again brings the Bloxity body back.
  */
 export class PlayerCharacter {
   readonly root = new Group();
@@ -33,18 +43,21 @@ export class PlayerCharacter {
   private animator: PlayerAnimator;
   private rig: PlayerRig;
   private key = '';
+  private disposed = false;
   private look: BodyLook = { suit: 1, shooter: 1, gear: [] };
 
   constructor(look?: BodyLook) {
     this.root.add(this.fall);
     this.fall.add(this.visual);
-    this.model = createSuitBody(look ?? this.look);
-    this.key = lookKey(look ?? this.look);
+    this.look = look ?? this.look;
+    this.model = createSuitBody(this.look);
+    this.key = lookKey(this.look);
     this.model.rotation.y = PLAYER_MODEL_YAW_OFFSET;
     this.visual.add(this.model);
     this.rig = new PlayerRig(this.model, this.model);
     this.animator = new PlayerAnimator(this.rig, this.visual);
     this.worldRoot.add(this.pets.root);
+    this.requestAvatar();
   }
 
   get height(): number {
@@ -63,18 +76,55 @@ export class PlayerCharacter {
     return this.look.shooter;
   }
 
+  /** True while the player is their own avatar (no suit). */
+  get isAvatar(): boolean {
+    return this.look.suit === AVATAR_SLOT;
+  }
+
+  /** True while the body on screen is the player's Bloxity avatar (not the bundled fallback). */
+  get showsBloxityBody(): boolean {
+    return this.model.userData['bloxityBody'] === true;
+  }
+
   /** Wear a look: rebuilt only when it differs from the current one. */
   setLook(look: BodyLook): void {
     const key = lookKey(look);
     if (key === this.key) return;
     this.key = key;
     this.look = look;
-    this.model.removeFromParent();
-    this.model = createSuitBody(look);
+    // Avatar to avatar: the Bloxity body on screen stays until the changed one lands.
+    const keepBloxity = look.suit === AVATAR_SLOT && this.showsBloxityBody;
+    if (!keepBloxity) this.install(createSuitBody(look));
+    this.requestAvatar();
+  }
+
+  /** Without a suit, fetch the player's Bloxity body and swap it in if the look is still the same. */
+  private requestAvatar(): void {
+    const look = this.look;
+    if (look.suit !== AVATAR_SLOT || !look.avatar) return;
+    const key = this.key;
+    void avatarBodies.build(look.avatar, look).then((body) => {
+      if (!body || this.disposed || this.key !== key) {
+        if (body) disposeOwnMaterial(body);
+        return;
+      }
+      this.install(body);
+    });
+  }
+
+  /** Put a body on screen: the rig and animator follow it, and the old body's own material goes. */
+  private install(model: Object3D): void {
+    const old = this.model;
+    old.removeFromParent();
+    if (old !== model) disposeOwnMaterial(old);
+    this.model = model;
     this.model.rotation.y = PLAYER_MODEL_YAW_OFFSET;
     this.visual.add(this.model);
     this.rig = new PlayerRig(this.model, this.model);
     this.rig.resetToBindPose();
+    // The rig sets the neck's own head scale as it binds; an avatar's chosen head size multiplies it.
+    const headScale = this.model.userData['headScale'] as number | undefined;
+    if (headScale !== undefined) this.rig.getBone('Neck1')?.scale.setScalar(neckScale(headScale));
     this.animator.setRig(this.rig);
   }
 
@@ -161,6 +211,8 @@ export class PlayerCharacter {
   }
 
   dispose(): void {
+    this.disposed = true;
+    disposeOwnMaterial(this.model);
     this.pets.dispose();
     this.root.removeFromParent();
     this.worldRoot.removeFromParent();
@@ -172,3 +224,19 @@ const DEATH_ANIMATION_SECONDS = Math.min(1.7, COMBAT.deathSeconds - 0.25);
 const TOPPLE = 0.45;
 const BOUNCE = 0.25;
 const VANISH_START = 1.15;
+
+/** A Bloxity body owns its material (textures and geometry are shared caches); a suit body owns nothing. */
+const disposeOwnMaterial = (model: Object3D): void => {
+  if (model.userData['bloxityBody'] !== true) return;
+  const seen = new Set<Material>();
+  model.traverse((child) => {
+    const material = (child as Mesh).material as Material | undefined;
+    if (material && !Array.isArray(material) && !seen.has(material) && (child as Mesh).isMesh && child.userData['suitGear'] !== true) {
+      // Items on the body (hats, back items) share cached materials: only the skinned body's own goes.
+      if ((child as Mesh & { isSkinnedMesh?: boolean }).isSkinnedMesh) {
+        seen.add(material);
+        material.dispose();
+      }
+    }
+  });
+};

@@ -1,4 +1,5 @@
 import {
+  AVATAR_SLOT,
   EGGS,
   GEAR_EQUIP_MAX,
   GEAR_INVENTORY_MAX,
@@ -158,6 +159,8 @@ export interface BackpackState {
   ownedShooters: number;
   pets: readonly NetPet[];
   gear: readonly NetGear[];
+  /** The player's Bloxity portrait, for the "Your Avatar" card (empty when there is none). */
+  avatarUrl?: string;
 }
 
 export interface BackpackActions {
@@ -180,7 +183,7 @@ const TAB_ICONS: Readonly<Record<BackpackTab, string>> = { pets: ICON.pets, suit
 export class BackpackWindow extends Window {
   private tab: BackpackTab = 'pets';
   private readonly tabs = new Map<BackpackTab, HTMLButtonElement>();
-  private state: BackpackState = { wins: 0, rebirths: 0, suitSlot: 1, ownedSuits: 1, shooterId: 1, ownedShooters: 1, pets: [], gear: [] };
+  private state: BackpackState = { wins: 0, rebirths: 0, suitSlot: 0, ownedSuits: 0, shooterId: 1, ownedShooters: 1, pets: [], gear: [] };
   private signature = '';
   private deleting = false;
   private selectedShooter = 1;
@@ -243,7 +246,7 @@ export class BackpackWindow extends Window {
   private signatureOf(s: BackpackState): string {
     const pets = s.pets.map((pet) => `${pet.uid}:${pet.petId}:${pet.equipped ? 1 : 0}`).join(',');
     const gear = s.gear.map((piece) => `${piece.uid}:${piece.gearId}:${piece.rarity}:${piece.equipped ? 1 : 0}`).join(',');
-    return `${this.tab}|${this.deleting ? 1 : 0}|${Math.floor(s.wins)}|${s.rebirths}|${s.suitSlot}|${s.ownedSuits}|${s.shooterId}|${s.ownedShooters}|${this.selectedShooter}|${pets}|${gear}`;
+    return `${this.tab}|${this.deleting ? 1 : 0}|${Math.floor(s.wins)}|${s.rebirths}|${s.suitSlot}|${s.ownedSuits}|${s.avatarUrl ?? ""}|${s.shooterId}|${s.ownedShooters}|${this.selectedShooter}|${pets}|${gear}`;
   }
 
   protected override render(): void {
@@ -332,6 +335,13 @@ export class BackpackWindow extends Window {
     const owned = SUITS.filter((suit) => ownsSuit(s.ownedSuits, suit.slot)).length;
     this.top.append(el('span', '', `${owned}/${SUIT_COUNT} Owned`));
     const grid = el('div', 'sp-grid');
+    // First: the player's own Bloxity avatar - always owned, worn again at any time.
+    const self = this.card(s.avatarUrl || this.portraits.suit(AVATAR_SLOT), 'Your Avatar', 'sp-rarity-common', {
+      check: s.suitSlot === AVATAR_SLOT,
+      title: 'Be yourself: your own Bloxity avatar (+1/click)',
+    });
+    self.addEventListener('click', () => this.actions.suitSelect(AVATAR_SLOT));
+    grid.append(self);
     for (const suit of SUITS) {
       const has = ownsSuit(s.ownedSuits, suit.slot);
       const affordable = s.wins >= suit.cost;
@@ -348,7 +358,8 @@ export class BackpackWindow extends Window {
     this.body.append(grid);
     const worn = SUITS[s.suitSlot - 1];
     if (worn) this.body.append(el('div', 'sp-totals sp-outline', `Wearing the ${worn.name}: +${formatAmount(suitPerClickOf(s.suitSlot, s.ownedSuits))} per click`));
-    this.body.append(el('div', 'sp-note', 'Buy suits here or on the Suit Upgrades stage to the right of spawn. Rebirth resets suits.'));
+    else this.body.append(el('div', 'sp-totals sp-outline', `Wearing your own avatar: +${formatAmount(suitPerClickOf(AVATAR_SLOT, s.ownedSuits))} per click`));
+    this.body.append(el('div', 'sp-note', 'Claim the Classic Suit free to become Spider-Man! Buy suits here or on the Suit Upgrades stage to the right of spawn. Rebirth resets suits.'));
   }
 
   private renderShooters(): void {

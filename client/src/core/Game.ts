@@ -687,6 +687,7 @@ export class Game {
     }
     if (state.bestStage === 0 && state.webPower < 60) return touch ? 'Double-tap JUMP to web-swing!' : 'Jump, then press Space again in mid-air to web-swing!';
     const nextSuit = SUITS.find((suit) => !ownsSuit(state.ownedSuits, suit.slot));
+    if (nextSuit?.slot === 1) return 'Become Spider-Man! Claim the Classic Suit FREE at Suit Upgrades, to your RIGHT';
     if (nextSuit && state.wins >= nextSuit.cost) return `You can afford the ${nextSuit.name}! Suit Upgrades are to your RIGHT`;
     if (state.pets.length === 0 && state.wins >= 400) return 'Hatch a pet at the eggs behind you!';
     if (state.bestStage === 0 && state.webPower >= 60) return 'Head through the portal ahead to stop the villains of Stage 1!';
@@ -767,6 +768,7 @@ export class Game {
       ownedShooters: state.ownedShooters,
       pets,
       gear,
+      avatarUrl: state.avatarUrl,
     };
   }
 

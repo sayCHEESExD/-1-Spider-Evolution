@@ -71,7 +71,7 @@ console.log('\nStarting values');
   const p = fresh();
   check(p.webPower === 0 && p.xp === 0 && p.level === 1, 'a new player holds 0 Web Power and 0 XP at Level 1');
   check(p.gainPerClick === 1, 'the Classic Suit pays +1 per click');
-  check(p.suitSlot === 1 && p.ownedSuits === 1 && p.shooterId === 1 && p.ownedShooters === 1, 'the Classic Suit and Classic Shooter are owned and worn');
+  check(p.suitSlot === S.AVATAR_SLOT && p.ownedSuits === 0 && p.shooterId === 1 && p.ownedShooters === 1, 'a new player is their own Bloxity avatar (no suit owned yet), with the Classic Shooter');
   check(p.maxHealth === 100 && p.health === 100, 'Rebirth 0: 100 HP');
   check(p.maxSwings === 2, 'two web swings to start');
   check(p.moveSpeed === 17, 'Level 1 runs at Speed 17');
@@ -184,6 +184,40 @@ console.log('\nSuits');
   check(!suits.select(p, 99, progression).ok && !suits.select(p, 'x', progression).ok, 'unknown suits are refused');
 }
 
+console.log('\nThe Bloxity avatar and the first suit');
+{
+  const suits = new SuitService();
+  const p = fresh('newcomer');
+  check(p.suitSlot === S.AVATAR_SLOT && p.gainPerClick === 1, 'a new player joins as their avatar at +1 per click (the pace the Classic Suit had)');
+  check(S.SUITS[0].name === 'Classic Suit' && S.SUITS[0].cost === 0 && S.SUITS[0].perClick === 1, 'the Classic Suit is unchanged: slot 1, 0 Trophies, +1');
+  check(!S.ownsSuit(p.ownedSuits, 1), 'the Classic Suit is no longer owned from the start: it is the first unlock');
+  const pad = S.SUIT_PADS[0];
+  place(p, pad.x, pad.z, pad.y);
+  const claimed = suits.pad(p, 1, progression);
+  check(claimed.ok && claimed.action === 'bought' && p.suitSlot === 1 && S.ownsSuit(p.ownedSuits, 1) && p.wins === 0 && p.gainPerClick === 1, 'its pad claims it free and turns the avatar into Spider-Man');
+  const back = suits.select(p, S.AVATAR_SLOT, progression);
+  check(back.ok && back.action === 'avatar' && p.suitSlot === S.AVATAR_SLOT && S.ownsSuit(p.ownedSuits, 1) && p.gainPerClick === 1, 'the avatar can be worn again from the Backpack, keeping the suit');
+  check(!suits.select(p, S.AVATAR_SLOT, progression).ok, 'wearing the avatar twice does nothing');
+  const again = suits.select(p, 1, progression);
+  check(again.ok && again.action === 'equipped' && p.suitSlot === 1 && p.wins === 0, 'and the owned suit goes back on free');
+  p.wins = 3;
+  check(suits.select(p, 2, progression).ok && p.suitSlot === 2 && p.gainPerClick === 2, 'later suits keep their price and per-click (Homemade: 1 Trophy, +2)');
+  check(suits.select(p, S.AVATAR_SLOT, progression).ok && p.gainPerClick === 1, 'as the avatar, the click is +1 whatever suits are owned');
+  // Persistence: a new player's save, and a save from before the avatar existed.
+  const q = new PlayerState();
+  profileStore.applyTo(q, { ...profileStore.snapshot(fresh('saved-newcomer')) });
+  check(q.suitSlot === S.AVATAR_SLOT && q.ownedSuits === 0, "a new player's save restores them as their avatar with no suit");
+  const old = new PlayerState();
+  profileStore.applyTo(old, { ...profileStore.snapshot(fresh('old')), ownedSuits: 0b10011, suitSlot: 5 });
+  check(old.suitSlot === 5 && S.ownsSuit(old.ownedSuits, 1) && S.ownsSuit(old.ownedSuits, 5), 'an older save keeps its suits and the one it wore');
+  const oldClassic = new PlayerState();
+  profileStore.applyTo(oldClassic, { ...profileStore.snapshot(fresh('old2')), ownedSuits: 1, suitSlot: 1 });
+  check(oldClassic.suitSlot === 1 && S.ownsSuit(oldClassic.ownedSuits, 1), 'an older save wearing the Classic Suit still wears it');
+  const unowned = new PlayerState();
+  profileStore.applyTo(unowned, { ...profileStore.snapshot(fresh('forged2')), ownedSuits: 0, suitSlot: 7 });
+  check(unowned.suitSlot === S.AVATAR_SLOT, 'a save wearing a suit it does not own is put back in the avatar');
+}
+
 console.log('\nWeb shooters');
 {
   const shooters = new ShooterService();
@@ -226,7 +260,7 @@ console.log('\nRebirth');
   const result = rebirths.rebirth(p, progression);
   check(result.ok && p.rebirths === 1, 'Level 8 rebirths into Rebirth 1');
   check(p.webPower === 0 && p.xp === 0 && p.level === 1 && p.wins === 0, 'Web Power, XP (the level) and Wins are reset');
-  check(p.ownedSuits === 1 && p.suitSlot === 1, 'suits are reset to the Classic Suit');
+  check(p.ownedSuits === S.STARTER_SUIT_BITS && p.suitSlot === S.AVATAR_SLOT, 'suits are reset: back to their own avatar, the Classic Suit to claim again');
   check(p.pets.length === 1 && p.ownedShooters === 0b11 && p.shooterId === 2 && p.bestStage === 4, 'pets, shooters and the stage record are kept');
   check(p.maxHealth === 150 && p.health === 150, 'Rebirth 1: 150 HP');
   check(p.gainPerClick === Math.floor(1 * 1.25 * 1.1 * 2), 'Rebirth 1 doubles every click');
@@ -488,7 +522,7 @@ console.log('\nPersistence: a save round-trips every deriving fact');
   const forged = { ...snapshot, ownedSuits: 0xffffffff, suitSlot: 40, shooterId: 9, gear: [{ uid: 1, gearId: 6, rarity: 99 }] };
   const r = new PlayerState();
   profileStore.applyTo(r, forged);
-  check(r.ownedSuits === S.ALL_SUIT_BITS && r.suitSlot === 1 && r.shooterId === 1 && r.gear[0].rarity === 3, 'a tampered save is sanitised: known suits only, a valid slot, rarity clamped');
+  check(r.ownedSuits === S.ALL_SUIT_BITS && r.suitSlot === S.AVATAR_SLOT && r.shooterId === 1 && r.gear[0].rarity === 3, 'a tampered save is sanitised: known suits only, an unknown slot falls back to the avatar, rarity clamped');
   // Far past any old 16-bit ceiling: the rebirth count, and the level and health it yields, survive a save.
   const veteran = { ...snapshot, rebirths: 3_000_000_000, xp: S.xpForLevel(140), bestStage: 99 };
   const v = new PlayerState();

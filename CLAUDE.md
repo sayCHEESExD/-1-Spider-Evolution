@@ -38,6 +38,14 @@ Beware shell escaping when patching files that contain backticks: prefer the Wri
   UNCAPPED**: no MAX_LEVEL, no level table (cumulative totals are cached lazily); stats saturate at `MAX_STAT` (near the
   float64 limit, ~Level 770), never Infinity. Speed = 16 + 1/level to 24, then + 8 ln(L/24), x gear speed. Swings = 2 + 1
   per 3 rebirths (max 6, a design cap). Damage to an enemy = the whole Web Power.
+- **Players join as their own Bloxity avatar: suit slot 0 (`AVATAR_SLOT`).** No suit is owned at start
+  (`STARTER_SUIT_BITS = 0`); the Classic Suit (slot 1, 0 Trophies, +1) is the first unlock, claimed free on its pad.
+  The avatar clicks at +1 too, can be worn again from the Backpack ("Your Avatar"), and a rebirth returns to it. Old
+  saves keep the suits they hold. The body: `bloxity/AvatarBody.ts` builds Bloxity's `player.glb` (same rig as
+  `player.fbx`, so the animator drives it) with parts, skin, hat, back and proportions from the CDN
+  (`bloxity/bloxityAssets.ts`, copied from Katana); `PlayerCharacter` shows the bundled body in its own texture
+  at once and swaps the Bloxity body in when it lands (never blocks; a dead CDN just keeps the fallback).
+  Shooters and gear go on every body through `SuitBody.boltOn` with that body's measured part boxes.
 - **Rebirth** (`rebirth.ts`) is **UNCAPPED and formula-only** (never a table): XP x(1+R); HP 100+50R; next needs Level 8
   (R0), 12 (R1), then 12 + floor(3 log2(1 + (R-2)/6)) - logarithmic so the next rebirth always stays reachable.
   `rebirths` is float64 on the wire and in saves (no 16-bit clamp). Print counts with `formatCount`, figures with

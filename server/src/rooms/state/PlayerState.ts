@@ -103,8 +103,10 @@ export class PlayerState extends Schema {
   /** Damage dealt to enemies, ever: the Highest Damage board. */
   @type('float64') totalDamage = 0;
 
-  @type('uint8') suitSlot = 1;
-  @type('uint32') ownedSuits = 1;
+  /** 0 = the player's own Bloxity avatar (AVATAR_SLOT); 1..19 a suit. */
+  @type('uint8') suitSlot = 0;
+  /** Bit (slot - 1) per owned suit. Nothing at first: the Classic Suit is the first unlock. */
+  @type('uint32') ownedSuits = 0;
   @type('uint8') shooterId = 1;
   @type('uint8') ownedShooters = 1;
 

@@ -102,7 +102,7 @@ actor.send(S.MessageType.Hatch, { egg: 6, count: 3 });
 actor.send(S.MessageType.GearAction, { action: 'equip', uid: 12345 });
 actor.send(S.MessageType.Attack, { target: S.buildingTarget(5) });
 await sleep(500);
-check(self().suitSlot === 1 && self().ownedSuits === 1, 'a suit claimed from the wrong place (and without Trophies) is not granted');
+check(self().suitSlot === S.AVATAR_SLOT && self().ownedSuits === 0, 'a suit claimed from the wrong place (and without Trophies) is not granted: still their own avatar');
 check(self().shooterId === 1 && self().ownedShooters === 1, 'a web shooter bought away from the stand is refused');
 check(self().rebirths === 0, 'a rebirth below Level 8 does nothing');
 check(Math.abs(self().z - zBefore) < 1 && self().runStage === 0, 'a stage the player has never reached cannot be teleported to');

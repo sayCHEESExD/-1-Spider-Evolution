@@ -283,7 +283,12 @@ export const shade = (color: number, k: number): number => {
   return (r << 16) | (g << 8) | b;
 };
 
-/** The body's measured part boxes, in model space at the origin (after `paintSuit` ran once). */
+/** Measure the bundled body's layout without painting anything (the unsuited avatar needs its part boxes too). */
+export const measureBody = (model: Object3D): void => {
+  layout ??= measure(model);
+};
+
+/** The body's measured part boxes, in model space at the origin (after `paintSuit` or `measureBody` ran once). */
 export const partBox = (part: BodyPart): { min: Vector3; max: Vector3 } | null => {
   const box = layout?.boxes.get(part);
   return box ? { min: box.min.clone(), max: box.max.clone() } : null;

@@ -1,10 +1,12 @@
-import { SUIT_PADS, ownsSuit, suitBySlot, type SuitTier } from '@spider/shared';
+import { AVATAR_SLOT, SUIT_PADS, isAvatarSlot, ownsSuit, suitBySlot, type SuitTier } from '@spider/shared';
 import type { PlayerState } from '../rooms/state/PlayerState.js';
 import type { ProgressionService } from './ProgressionService.js';
 import { wallet } from './Wallet.js';
 
 export type SuitResult =
   | { readonly ok: true; readonly action: 'bought' | 'equipped'; readonly tier: SuitTier }
+  /** Back into the player's own Bloxity avatar (slot 0): always allowed, costs nothing. */
+  | { readonly ok: true; readonly action: 'avatar'; readonly tier?: undefined }
   | { readonly ok: false; readonly reason: 'unknown' | 'not-on-pad' | 'too-few-wins' | 'already-worn'; readonly tier?: SuitTier };
 
 /** Slack on the pad footprint, for the latency between the client's step and the server's. */
@@ -33,6 +35,12 @@ export class SuitService {
 
   select(player: PlayerState, slotRaw: unknown, progression: ProgressionService): SuitResult {
     const slot = Math.floor(Number(slotRaw));
+    if (isAvatarSlot(slot)) {
+      if (player.suitSlot === AVATAR_SLOT) return { ok: false, reason: 'already-worn' };
+      player.suitSlot = AVATAR_SLOT;
+      progression.syncDerived(player);
+      return { ok: true, action: 'avatar' };
+    }
     const tier = suitBySlot(slot);
     if (!tier) return { ok: false, reason: 'unknown' };
 
